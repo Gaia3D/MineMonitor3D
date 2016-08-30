@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Use correct character set. -->
+  <meta charset="utf-8">
+  <!-- Tell IE to use the latest, best version. -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>GangWon Open-Pit Mine Monitoring System</title>
+  <script src="./cesium_1.24/Build/Cesium/Cesium.js"></script>
+  <script type="text/javascript" src="./cesium_1.24/Build/Cesium/GeoserverTerrainProvider.js"></script>
+  <style>
+@import url(./cesium_1.24/Build/Cesium/Widgets/widgets.css);
+html, body, #cesiumContainer {
+  width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+}
+.ui-box {
+	display: block;
+	position: absolute;
+	top: 5px;
+	left: 3px;
+	max-width: 300px;
+	padding:5px;     
+	font-family:"맑은 고딕";
+	letter-spacing:-1px;
+	border-radius:7px;
+	background-color:#000;
+	opacity:0.9;
+	color: #fff;
+}
+.ui-box h1 {
+	margin:0 0 5px 0;
+	padding:0 0 7px 0;
+	border-bottom:1px solid #999;
+	font-size:1.0em;
+	opacity:1.0;
+	color: #ea4;
+}
+.ui-box label {
+	font-size:0.8em;
+}
+.ui-box select {
+    min-width: 150px;
+    height: 20px;
+}
+.ui-box > span {
+	display:inline-block;
+	margin-top:5px;
+	font-size:0.8em;
+	color:#aef;
+}	
+  </style>
+    <link href="lib/jquery-ui.css" rel="stylesheet" type="text/css" />
+    <link href="lib/thumbnail-slider.css" rel="stylesheet" type="text/css" />
+    <script src="lib/jquery-1.12.3.min.js" type="text/javascript"></script>
+    <script src="lib/thumbnail-slider.js" type="text/javascript"></script>
+    <!-- <script src="lib/jquery.balloon.js" type="text/javascript"></script> -->
+	<script src="lib/jquery-ui.js" type="text/javascript"></script>
+	<script src="info/site_info.js" type="text/javascript"></script>
+</head>
+<body>
+	<div id="cesiumContainer"></div>
+    <div class="ui-box" style="display:none;"></div>
+
+	<div id="thumbnail-slider">
+		<div class="inner">
+			<ul>
+				<li title="라파즈 한라시멘트" data="lafarge">
+					<a class="thumb" href="thumb/Lafarge_1.png">
+					</a>
+				</li>
+				<li title="동양시멘트" data="dongyang">
+					<a class="thumb" href="thumb/Dongyang_1.png">
+					</a>
+				</li>
+				<li title="아시아시멘트"  data="asia">
+					<a class="thumb" href="thumb/Asia_1.png">
+					</a>
+				</li>
+				<li title="현대시멘트"  data="hyundai">
+					<a class="thumb" href="thumb/Hyundai_1.png">
+					</a>
+				</li>
+				<li title="쌍용시멘트"  data="ssangyoung">
+					<a class="thumb" href="thumb/SSangyoung_1.png">
+					</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+  <script>
+	///////////////
+	// CESIUM INIT
+	// 불필요한 타임라인 없에고 초기화, 레이어 선택은 남김
+	var viewer = new Cesium.Viewer('cesiumContainer', 
+		{
+			timeline : false
+			, animation : false
+		}
+	);
+	
+	// 기본으로 설정할 이미지를 baseLayerPicker에서 찾아
+	var imageryProvider = null;
+	for (i in viewer.baseLayerPicker.viewModel.imageryProviderViewModels) {
+		provider = viewer.baseLayerPicker.viewModel.imageryProviderViewModels[i];
+		if (provider.name == "ESRI World Imagery") {
+			imageryProvider = provider;
+			break;
+		}
+	}
+	
+	// 기본으로 설정할 지형을 baseLayerPicker에서 찾아
+	var terrainProvider = null;
+	for (i in viewer.baseLayerPicker.viewModel.terrainProviderViewModels) {
+		provider = viewer.baseLayerPicker.viewModel.terrainProviderViewModels[i];
+		if (provider.name == "STK World Terrain meshes") {
+			terrainProvider = provider;
+			break;
+		}
+	}
+
+	// 기본 이미지와 지형으로 초기 설정
+	if (imageryProvider) viewer.baseLayerPicker.viewModel.selectedImagery = imageryProvider;
+	if (terrainProvider) viewer.baseLayerPicker.viewModel.selectedTerrain = terrainProvider;
+	
+
+	// 초기 위치 지정
+	viewer.camera.flyTo({
+		destination : Cesium.Cartesian3.fromDegrees(128.48, 37.31, 180000)
+	});
+	
+	///////////////
+	// POI DISPLAY
+	// TODO: WFS(GeoJSON)를 데이터 소스로 이용하게 수정
+	var scene = viewer.scene;
+	var poiData = [
+		{"Mine_Name" : "Dongyang Cement", "note" : "Inactive", "coordinates" : [129.17796849301573, 37.40930682240848]}
+		,{"Mine_Name" : "Lafarge Halla Cement", "note" : "Active", "coordinates" : [128.9819394, 37.5629028]}
+		,{"Mine_Name" : "Ssangyoung Resource Development Cement", "note" : "Active", "coordinates" : [129.16558055702833, 37.40219880356674]}
+		,{"Mine_Name" : "Asia Cement", "note" : "Active", "coordinates" : [128.30577632164253, 37.258690307680425]}
+		,{"Mine_Name" : "Hyundai Cement", "note" : "Active", "coordinates" : [128.35818094918238, 37.27129997447317]}
+		,{"Mine_Name" : "Ssangyoung Cement", "note" : "Inactive", "coordinates" : [129.03114793808132, 37.47607547914213]}
+	];
+
+	scene.primitives.removeAll();
+	var pinBuilder = new Cesium.PinBuilder();
+	var billboardCollection = viewer.scene.primitives.add(new Cesium.BillboardCollection());
+	var labels = scene.primitives.add(new Cesium.LabelCollection());
+	for (var i=0; i<poiData.length; i++) {
+		var data = poiData[i];
+		labels.add({
+			position : Cesium.Cartesian3.fromDegrees(data["coordinates"][0], data["coordinates"][1], 1000),
+			heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
+			font : '18pt monospace',
+			text     : data["Mine_Name"],
+			scale: 1,
+			verticalOrigin: Cesium.VerticalOrigin.CENTER,
+			horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+			outlineColor: Cesium.Color.BLACK,
+			outlineWidth: 2,
+			style : Cesium.LabelStyle.FILL_AND_OUTLINE
+		});
+		billboardCollection.add({
+			image : data["note"] == "Active" ? pinBuilder.fromText('A', Cesium.Color.RED, 48) : pinBuilder.fromText('I', Cesium.Color.BLUE, 48),
+			verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+			heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
+			position : Cesium.Cartesian3.fromDegrees(data["coordinates"][0], data["coordinates"][1], 1000)
+		});
+	}
+
+	
+	////////////
+	// MENU	
+	// http://www.menucool.com/jquery-slider
+	var thumbnailSliderOptions =
+	{
+		sliderId: "thumbnail-slider",
+		orientation: "horizontal",
+		// thumbWidth: "90px",
+		// thumbHeight: "45px",
+		thumbWidth: "120px",
+		thumbHeight: "80px",
+		showMode: 1,
+		autoAdvance: false,
+		selectable: false,
+		slideInterval: 3000,
+		// transitionSpeed: 1500,
+		transitionSpeed: 0,
+		shuffle: false,
+		startSlideIndex: 0, //0-based
+		pauseOnHover: true,
+		initSliderByCallingInitFunc: false,
+		rightGap: 0,
+		keyboardNav: true,
+		mousewheelNav: false,
+		before: null,
+		license: "mylicense"
+	};
+
+	var mcThumbnailSlider = new ThumbnailSlider(thumbnailSliderOptions);
+	$("#thumbnail-slider ul li").on("click", function() {
+		var selected = $(this);
+		$("#thumbnail-slider ul li").each(function() {
+			$(this).removeClass("active");
+		});
+		selected.addClass("active");
+		crrSite = selected.attr('data').trim();
+		var crrSiteInfo = siteInfo[crrSite];
+		if (!crrSiteInfo) 
+			hideInfo();
+		else
+			showInfo(crrSiteInfo);		
+	});
+	
+	//////////////
+	// jQuery Tooltip
+	$( "#thumbnail-slider" ).tooltip();
+
+	///////////
+	// TERRAIN
+	var demProvider = {};
+	demProvider["dem_2007"] = new Cesium.GeoserverTerrainProvider({
+		url : "/geoserver/gwc/service/wms",
+		layerName: "dem_2007",
+		styleName:"demToColor",
+		maxLevel: 17,
+		formatImage : {format : "image/png", extension: "png"}
+	});
+	demProvider["dem_2014"] = new Cesium.GeoserverTerrainProvider({
+		url : "/geoserver/gwc/service/wms",
+		layerName: "dem_2014",
+		styleName:"demToColor",
+		maxLevel: 17,
+		formatImage : {format : "image/png", extension: "png"}
+	});
+	demProvider["dem_2015"] = new Cesium.GeoserverTerrainProvider({
+		url : "/geoserver/gwc/service/wms",
+		layerName: "dem_2015",
+		styleName:"demToColor",
+		maxLevel: 17,
+		formatImage : {format : "image/png", extension: "png"}
+	});
+	demProvider["dem_2016"] = new Cesium.GeoserverTerrainProvider({
+		url : "/geoserver/gwc/service/wms",
+		layerName: "dem_2016",
+		styleName:"demToColor",
+		maxLevel: 17,
+		formatImage : {format : "image/png", extension: "png"}
+	});
+	
+	// default terrain
+	setDem("dem_2016");
+	
+	var crrDemName = "";
+	function setDem(demName) {
+		if (demName == undefined) {
+			console.error("Unknown DEM Selected!");
+			return;
+		}
+		if (crrDemName) {
+			if (crrDemName != demName) {
+				viewer.terrainProvider = demProvider[demName];
+				crrDemName = demName;
+			}
+		} else {
+			viewer.terrainProvider = demProvider[demName];
+			crrDemName = demName;
+		}
+		
+	}
+	
+	//////////////////
+	// WMS Layers
+	imgProvider = {};
+	
+	addWmsLayer("lafarge","photo",2014, 'Sangji:2013_WGS84');
+	addWmsLayer("lafarge","photo",2015, 'Sangji:2015_UAV_wgs84');
+	addWmsLayer("lafarge","photo",2016, 'Sangji:2016_merge_WGS84');
+	addWmsLayer("lafarge","restore",2016, 'Sangji:restore_2016_2015');
+	addWmsLayer("lafarge","restore",2015, 'Sangji:restore_2015_2014');
+	addWmsLayer("lafarge","dig",2015, 'Sangji:dig_2015_2014');
+	addWmsLayer("lafarge","dem_delta",2016, 'Sangji:DemDelta_2016-2015_5187');
+	addWmsLayer("lafarge","dem_delta",2015, 'Sangji:DemDelta_2015-2007_5187');
+	addWmsLayer("lafarge","photo_delta",2016, 'Sangji:PhotoDeltaDelta_2016-2015');
+	addWmsLayer("lafarge","photo_delta",2015, 'Sangji:PhotoDeltaDelta_2015-2014');
+	
+	var crrYear = 2016;
+	var crrSite = "lafarge";
+	var crrPhoto = "photo";
+	var crrTheme = null;
+	
+	function addWmsLayer(site, theme, year, wmsLayer) {
+		var id = site+":"+theme+":"+year;
+		
+		imgProvider[id] = new Cesium.WebMapServiceImageryProvider({
+			url : '/geoserver/gwc/service/wms',
+			layers : wmsLayer,
+			parameters : {
+				transparent : 'true',
+				format : 'image/png'
+			}
+		});
+	}
+	
+	function setWmsLayer(option) {
+		var year = option.year ? option.year : crrYear;
+		var site = option.site ? option.site : crrSite;
+		
+		crrYear = year;
+		crrSite = site;
+		
+		var photo = option.photo ? option.photo : crrPhoto;
+		var theme = option.theme ? option.theme : crrTheme;
+		
+		var photoId = site+":"+photo+":"+year;
+		var themeId = site+":"+theme+":"+year;
+		
+		var photoProvider = imgProvider[photoId];
+		var themeProvider = imgProvider[themeId];
+		
+
+		while (viewer.scene.imageryLayers.get(1))
+			viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(1));
+
+		if (photoProvider) {
+			viewer.scene.imageryLayers.addImageryProvider(photoProvider);
+			crrPhoto = photo;
+		}
+		
+		if (themeProvider) {
+			viewer.scene.imageryLayers.addImageryProvider(themeProvider);
+			crrTheme = theme;
+		}
+	}
+	
+	///////////////////
+	// INFO BOX
+	var actionDic = {};
+	function showInfo(infoObj) {
+		var htmlList = [];
+		
+		htmlList.push('<h1>');
+		htmlList.push(infoObj.title);
+		htmlList.push('</h1>');
+		htmlList.push('<label for="chg_type">• 변화종류&nbsp;</label>');
+		htmlList.push('<select name="chg_type" id="chg_type">');
+		for (var i in infoObj.chg_type) {
+			var item = infoObj.chg_type[i]; 
+			var id = "chg_type_"+i;
+			actionDic[id] = item.action;
+			if (item.selected)
+				htmlList.push('<option value="'+id+'" selected="selected">');
+			else
+				htmlList.push('<option value="'+id+'">');
+			htmlList.push(item.text);
+			htmlList.push('</option>');
+		}
+		htmlList.push('</select>');
+		htmlList.push('<br/>');
+		htmlList.push('<label for="period">• 비교시기&nbsp;</label>');
+		htmlList.push('<select name="period" id="period">');
+		for (var i in infoObj.period) {
+			var item = infoObj.period[i]; 
+			var id = "period_"+i;
+			actionDic[id] = item.action;
+			if (item.selected)
+				htmlList.push('<option value="'+id+'" selected="selected">');
+			else
+				htmlList.push('<option value="'+id+'">');
+			htmlList.push(item.text);
+			htmlList.push('</option>');
+		}
+		htmlList.push('</select>');
+		htmlList.push('<br/>');
+		htmlList.push('<span>');
+		htmlList.push(infoObj.message);
+		htmlList.push('</span>');
+		
+		var ui_box = $(".ui-box");
+		ui_box.hide();
+		ui_box.html(htmlList.join(""));
+
+		$( ".ui-box select" )
+		  .change(function () {
+			var id = $( this ).val();
+			actionDic[id]();
+		//});
+		}).change();
+		ui_box.show("drop", {}, 500);
+		
+		if (infoObj.view)
+			viewer.camera.flyTo(infoObj.view);
+	}
+
+	function hideInfo() {
+		$(".ui-box").hide();
+	}
+  </script>
+</body>
+</html>
