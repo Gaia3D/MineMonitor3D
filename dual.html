@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <!-- Use correct character set. -->
+  <meta charset="utf-8">
+  <!-- Tell IE to use the latest, best version. -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+  <title>GangWon Open-Pit Mine Monitoring System</title>
+  <script src="./cesium_1.24/Build/Cesium/Cesium.js"></script>
+  <script type="text/javascript" src="./cesium_1.24/Build/Cesium/GeoserverTerrainProvider.js"></script>
+  <style>
+@import url(./cesium_1.24/Build/Cesium/Widgets/widgets.css);
+html, body, #mainContainer {
+  width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+}
+#title {
+  height: 10%;
+}
+#masterContainer {
+  float:left; width: 50%; height: 90%; margin: 0; padding: 0; overflow: hidden;
+}
+#slaveContainer {
+  float:right; width: 50%; height: 90%; margin: 0; padding: 0; overflow: hidden;
+}
+#mainSlider {
+	display: block;
+	position: absolute;
+	top: 10%;
+	width: 50%;
+	left: 3px;
+	padding:5px;     
+}
+#slaveSlider {
+	display: block;
+	position: absolute;
+	top: 10%;
+	width: 50%;
+	left: 50%;
+	padding:5px;     
+}
+
+.ui-box {
+	display: block;
+	position: absolute;
+	top: 5px;
+	left: 3px;
+	padding:5px;     
+	font-family:"맑은 고딕";
+	letter-spacing:-1px;
+	border-radius:7px;
+	background-color:#000;
+	opacity:0.9;
+	color: #fff;
+}
+.ui-box h1 {
+	margin:0 0 5px 0;
+	padding:0 0 7px 0;
+	border-bottom:1px solid #999;
+	font-size:1.0em;
+	opacity:1.0;
+	color: #ea4;
+}
+.ui-box label {
+	font-size:0.8em;
+}
+.ui-box select {
+    min-width: 110px;
+    height: 20px;
+}
+.ui-box > span {
+	display:inline-block;
+	margin-top:5px;
+	font-size:0.8em;
+	color:#aef;
+}
+.ui-box > ul {
+	margin-bottom:10px;
+}
+	.ui-box > ul li {
+		margin-bottom:7px;
+	}
+		.ui-box > ul li label {
+			display:inline-block;
+			width:80px;
+			margin-right:0px;
+		}
+		.ui-box > ul li > select {
+			margin-right:20px;
+		}
+		.ui-box > ul li button {
+			width:100px;
+		}
+		
+		
+#thumbnail-slider ul li.spacer {
+    width: 20px;
+}
+</style>
+    <link href="lib/jquery-ui.css" rel="stylesheet" type="text/css" />
+    <link href="lib/thumbnail-slider.css" rel="stylesheet" type="text/css" />
+    <script src="lib/jquery-1.12.3.min.js" type="text/javascript"></script>
+    <script src="lib/thumbnail-slider.js" type="text/javascript"></script>
+    <!-- <script src="lib/jquery.balloon.js" type="text/javascript"></script> -->
+	<script src="lib/jquery-ui.js" type="text/javascript"></script>
+	<script src="info/site_info.js" type="text/javascript"></script>
+</head>
+<body>
+	<div id="mainContainer">
+		<div id="title"> TITLE HERE </div>
+		<div id="masterContainer"></div>
+		<div id="slaveContainer"></div>
+	</div>
+	<div id="mainSlider">
+		<input type="range" min="0" max="50" value="25" step="5" />
+	</div>
+	<div id="slaveSlider">
+		<input type="range" min="0" max="50" value="25" step="5" />
+	</div>
+
+	<div id="thumbnail-slider">
+		<div class="inner">
+			<ul>
+				<li title="라파즈 한라시멘트" data="lafarge">
+					<a class="thumb" href="thumb/Lafarge_1.png">
+					</a>
+				</li>
+				<li title="동양시멘트" data="dongyang">
+					<a class="thumb" href="thumb/Dongyang_1.png">
+					</a>
+				</li>
+				<li title="아시아시멘트"  data="asia">
+					<a class="thumb" href="thumb/Asia_1.png">
+					</a>
+				</li>
+				<li title="현대시멘트"  data="hyundai">
+					<a class="thumb" href="thumb/Hyundai_1.png">
+					</a>
+				</li>
+				<li title="쌍용시멘트"  data="ssangyoung">
+					<a class="thumb" href="thumb/SSangyoung_1.png">
+					</a>
+				</li>
+				<li class="spacer"></li>
+				<li title="상지대학교"  data="sangji">
+					<a class="thumb" href="thumb/Sangji_1.PNG">
+					</a>
+				</li>
+				<li title="임해지역"  data="forestdamage">
+					<a class="thumb" href="thumb/ForestDamage_1.PNG">
+					</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+  <script>
+	///////////////
+	// CESIUM INIT
+	// 불필요한 타임라인 없에고 초기화, 레이어 선택은 남김
+	var masterViewer = new Cesium.Viewer('masterContainer', 
+		{
+			timeline : false
+			, animation : false
+		}
+	);
+
+	var slaveViewer = new Cesium.Viewer('slaveContainer', 
+		{
+			timeline : false
+			, animation : false
+		}
+	);
+	
+	// Sync master & slave
+	var masterCamera = masterViewer.scene.camera;
+	var slaveCamera = slaveViewer.scene.camera;
+
+	slaveViewer.scene.preRender.addEventListener(function(){
+		if(slaveViewer.scene.mode !== Cesium.SceneMode.MORPHING){
+		  slaveCamera.setView({
+			  destination : masterCamera.position,
+			  orientation: {
+				  heading : masterCamera.heading,
+				  pitch : masterCamera.pitch,
+				  roll :  masterCamera.roll
+			  }
+		  });
+		}
+	});
+
+	////////////
+	// MENU	
+	// http://www.menucool.com/jquery-slider
+	var thumbnailSliderOptions =
+	{
+		sliderId: "thumbnail-slider",
+		orientation: "horizontal",
+		// thumbWidth: "90px",
+		// thumbHeight: "45px",
+		thumbWidth: "120px",
+		thumbHeight: "80px",
+		showMode: 1,
+		autoAdvance: false,
+		selectable: false,
+		slideInterval: 3000,
+		// transitionSpeed: 1500,
+		transitionSpeed: 0,
+		shuffle: false,
+		startSlideIndex: 0, //0-based
+		pauseOnHover: true,
+		initSliderByCallingInitFunc: false,
+		rightGap: 0,
+		keyboardNav: true,
+		mousewheelNav: false,
+		before: null,
+		license: "mylicense"
+	};
+
+	var mcThumbnailSlider = new ThumbnailSlider(thumbnailSliderOptions);
+	$("#thumbnail-slider ul li").on("click", function() {
+		var selected = $(this);
+		$("#thumbnail-slider ul li").each(function() {
+			$(this).removeClass("active");
+		});
+		selected.addClass("active");
+		crrSite = selected.attr('data').trim();
+		var crrSiteInfo = siteInfo[crrSite];
+		if (!crrSiteInfo) 
+			hideInfo();
+		else
+			showInfo(crrSiteInfo);		
+	});
+	
+  </script>
+</body>
+</html>
