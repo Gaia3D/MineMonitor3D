@@ -38,7 +38,22 @@
     font-family:"맑은 고딕"; font-size:1.0em; color: #ea4;
     opacity:1.0;
   }
-  .uiBox button {border-radius: 4px; font-family:"맑은 고딕"; font-size: 13px;}
+  .uiBox button {
+    border-radius: 4px; font-family:"맑은 고딕"; font-size: 13px;
+    background: #ccc;
+    cursor: pointer;
+    border-top: solid 2px #eaeaea;
+    border-left: solid 2px #eaeaea;
+    border-bottom: solid 2px #777;
+    border-right: solid 2px #777;
+  }
+  button.down {
+    background: #bbb;
+    border-top: solid 2px #777;
+    border-left: solid 2px #777;
+    border-bottom:solid 2px  #eaeaea;
+    border-right: solid 2px #eaeaea;
+  }
   .ui-slider-handle {
     width:30px !important; height:15px !important; line-height:1.6em !important;
     top:50% !important; margin-top:-8px !important; margin-left:-15px !important;
@@ -61,21 +76,14 @@
   <script src="lib/jquery-1.12.3.min.js" type="text/javascript"></script>
 	<script src="lib/jquery-ui.js" type="text/javascript"></script>
   <script src="lib/thumbnail-slider.js" type="text/javascript"></script>
-  <script src="./cesium_1.24/Build/Cesium/Cesium.js" type="text/javascript"></script>
-  <script src="./cesium_1.24/Build/Cesium/GeoserverTerrainProvider.js" type="text/javascript"></script>
+  <script src="cesium_1.24/Build/Cesium/Cesium.js" type="text/javascript"></script>
+  <script src="lib/GeoserverTerrainProvider.js" type="text/javascript"></script>
+  <script src="lib/WCSTerrainProvider.js" type="text/javascript"></script>
 	<script src="info/site_info.js" type="text/javascript"></script>
   <script>
   // On Init
   $( function(){
     initDivSize();
-    /*
-    initUiBox(
-      {
-        photoYearArray:[2007,2008,2010,2013,2014,2015,2016], 
-        demYearArray:[2007,2014,2015,2016]
-      }
-    );
-    */
     initMenuSlider();
     initCesium();
     setDefaultDataset();
@@ -90,10 +98,35 @@
      
      // WMS Layer 추가
      initWmsLayers();
+     
+     initPoi();
   });
   
   // 브라우저 크기 조정시 div 크기 재조정
   $(window).resize(initDivSize);
+  
+  function initButton() {
+    $(".uiBox button").off("click").on("click", onButton);
+  }
+  
+  function onButton(e) {
+    var obj = $(this);
+    var id = obj.attr("id");
+    var parent = obj.parent().parent().parent();
+    var viewId = parent.attr("id");;
+    //alert("ID: "+ id + ", View: " + viewId);
+    
+    if (viewId == "leftContainer") {
+      $("#leftContainer button").removeClass("down");
+      obj.addClass("down");
+      
+    }
+    else if (viewId == "rightContainer") {
+      $("#rightContainer button").removeClass("down");
+      obj.addClass("down");
+
+      }
+  }
   
   // set divs size
   function initDivSize() {
@@ -154,13 +187,16 @@
   function showInfo(option) {
     if (!option) 
       return;
+    if (option.view) viewer.camera.flyTo(option.view); 
       
     $(".uiBox").hide();
     
     $("#leftContainer .uiBox h2").text(option.title);
 
     var photoYearArray = option.photoYearArray;
+    if (!photoYearArray) photoYearArray = [(new Date()).getFullYear()];
     var demYearArray = option.demYearArray;
+    if (!demYearArray) demYearArray = [(new Date()).getFullYear()];
     
     if (!photoYearArray || !demYearArray)
       return;
@@ -203,6 +239,7 @@
     
     // UI Box 복사
     $("#rightContainer .uiBox").html($("#leftContainer .uiBox").html());
+    initButton();
     
     var rightHandle = $("#rightContainer .ui-slider-handle");
     $("#rightContainer .yearSlider").slider({
@@ -235,7 +272,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle="yellow";
       ctx.strokeStyle="yellow";
-      ctx.font='11px "맑은 고딕"';
+      ctx.font='12px "맑은 고딕"';
       ctx.fillText("영상년도:", 0,12, 40);
       ctx.fillText("DEM년도:", 0,51, 40);
       ctx.font='8px "맑은 고딕"';
@@ -266,9 +303,6 @@
         }
       }
     }
-
-		if (infoObj.view)
-			viewer.camera.flyTo(infoObj.view);
   }
 
 	function hideInfo() {
@@ -463,6 +497,69 @@
 		}
 	}
 
+	///////////////
+	// POI DISPLAY
+	// TODO: WFS(GeoJSON)를 데이터 소스로 이용하게 수정
+  function initPoi() {
+    var poiData = [
+      {"Mine_Name" : "Dongyang Cement", "note" : "Inactive", "coordinates" : [129.17796849301573, 37.40930682240848]}
+      ,{"Mine_Name" : "Lafarge Halla Cement", "note" : "Active", "coordinates" : [128.9819394, 37.5629028]}
+      ,{"Mine_Name" : "Ssangyoung Resource Development Cement", "note" : "Active", "coordinates" : [129.16558055702833, 37.40219880356674]}
+      ,{"Mine_Name" : "Asia Cement", "note" : "Active", "coordinates" : [128.30577632164253, 37.258690307680425]}
+      ,{"Mine_Name" : "Hyundai Cement", "note" : "Active", "coordinates" : [128.35818094918238, 37.27129997447317]}
+      ,{"Mine_Name" : "Ssangyoung Cement", "note" : "Inactive", "coordinates" : [129.03114793808132, 37.47607547914213]}
+    ];
+
+    var scene = viewer.scene;
+    var sceneR = slaveViewer.scene; 
+    
+    scene.primitives.removeAll();
+    sceneR.primitives.removeAll();
+    var pinBuilder = new Cesium.PinBuilder();
+    var billboardCollection = scene.primitives.add(new Cesium.BillboardCollection());
+    var billboardCollectionR = sceneR.primitives.add(new Cesium.BillboardCollection());
+    var labels = scene.primitives.add(new Cesium.LabelCollection());
+    var labelsR = sceneR.primitives.add(new Cesium.LabelCollection());
+    for (var i=0; i<poiData.length; i++) {
+      var data = poiData[i];
+      labels.add({
+        position : Cesium.Cartesian3.fromDegrees(data["coordinates"][0], data["coordinates"][1], 1000),
+        heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
+        font : '18pt monospace',
+        text     : data["Mine_Name"],
+        scale: 1,
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style : Cesium.LabelStyle.FILL_AND_OUTLINE
+      });
+      labelsR.add({
+        position : Cesium.Cartesian3.fromDegrees(data["coordinates"][0], data["coordinates"][1], 1000),
+        heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
+        font : '18pt monospace',
+        text     : data["Mine_Name"],
+        scale: 1,
+        verticalOrigin: Cesium.VerticalOrigin.CENTER,
+        horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+        outlineColor: Cesium.Color.BLACK,
+        outlineWidth: 2,
+        style : Cesium.LabelStyle.FILL_AND_OUTLINE
+      });
+      billboardCollection.add({
+        image : data["note"] == "Active" ? pinBuilder.fromText('A', Cesium.Color.RED, 48) : pinBuilder.fromText('I', Cesium.Color.BLUE, 48),
+        verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+        heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
+        position : Cesium.Cartesian3.fromDegrees(data["coordinates"][0], data["coordinates"][1], 1000)
+      });
+      billboardCollectionR.add({
+        image : data["note"] == "Active" ? pinBuilder.fromText('A', Cesium.Color.RED, 48) : pinBuilder.fromText('I', Cesium.Color.BLUE, 48),
+        verticalOrigin : Cesium.VerticalOrigin.BOTTOM,
+        heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
+        position : Cesium.Cartesian3.fromDegrees(data["coordinates"][0], data["coordinates"][1], 1000)
+      });
+    }
+  }
   </script>
 </header>
 <body>
@@ -481,10 +578,10 @@
           <div class="ui-slider-handle"></div>
         </div>
         <div class="buttonBox">
-          <button>영상보기</button>
-          <button>영상변화분석</button>
-          <button>지형변화분석</button>
-          <button>변화지역보기</button>
+          <button id="btnPhotoView" class="down">영상보기</button>
+          <button id="btnPhotoDiff">영상변화분석</button>
+          <button id="btnDemDiff">지형변화분석</button>
+          <button id="btnDiffArea">변화지역보기</button>
         </div>
       </div>
     </div>
