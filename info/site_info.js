@@ -5,6 +5,8 @@ var siteInfo = {};
 siteInfo["lafarge"] =
 {
 	title: "라파즈 한라시멘트 - 가행광산",
+  photoYearArray:[2007,2008,2010,2013,2014,2015,2016], 
+  demYearArray:[2007,2014,2015,2016],
 	view: {
         destination : Cesium.Cartesian3.fromDegrees(128.96, 37.52, 3000.0),
         orientation : {
@@ -29,6 +31,8 @@ siteInfo["lafarge"] =
 siteInfo["dongyang"] =
 {
 	title: "동양시멘트 - 휴지광산",
+  photoYearArray:[2014,2016], 
+  demYearArray:[2014],
 	view: {
         destination : Cesium.Cartesian3.fromDegrees(129.172, 37.385, 2000.0),
         orientation : {

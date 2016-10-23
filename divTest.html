@@ -68,12 +68,14 @@
   // On Init
   $( function(){
     initDivSize();
+    /*
     initUiBox(
       {
         photoYearArray:[2007,2008,2010,2013,2014,2015,2016], 
         demYearArray:[2007,2014,2015,2016]
       }
     );
+    */
     initMenuSlider();
     initCesium();
     setDefaultDataset();
@@ -105,111 +107,6 @@
     $("#rightContainer").width(mapWidth);
   }
   
-  function initUiBox(option) {
-    if (!option) 
-      return;
-    
-    var photoYearArray = option.photoYearArray;
-    var demYearArray = option.demYearArray;
-    
-    if (!photoYearArray || !demYearArray)
-      return;
-    if (!photoYearArray.indexOf || !demYearArray.indexOf)
-      return;
-    if (!photoYearArray.length || !demYearArray.length)
-      return;
-    if (photoYearArray.length == 1) {
-      photoYearArray.push(photoYearArray[0]);
-    }
-    if (demYearArray.length == 1) {
-      demYearArray.push(demYearArray[0]);
-    }
-    
-    var minYear = Math.min(Math.min.apply(Math, photoYearArray), Math.min.apply(Math, demYearArray));
-    var maxYear = Math.min(Math.max.apply(Math, photoYearArray), Math.max.apply(Math, demYearArray));
-    
-    var fullYears = photoYearArray;
-    $.each(demYearArray, function(i, el){
-      if ($.inArray(el, fullYears) === -1) fullYears.push(el);
-    });
-    fullYears = fullYears.sort();
-    var secondIndex = fullYears.length - 2;
-    if (secondIndex < 0) secondIndex = 0;
-    var secondYear = fullYears[secondIndex];
-    
-    var leftHandle = $("#leftContainer .ui-slider-handle");
-    $("#leftContainer .yearSlider").slider({
-      min: minYear,
-      max: maxYear,
-      value: maxYear,
-      step: 1,
-      create: function() {
-        leftHandle.text($(this).slider("value"));
-      },
-      slide: function(event, ui) {
-        leftHandle.text(ui.value);
-      }
-    });
-    
-    // UI Box 복사
-    $("#rightContainer .uiBox").html($("#leftContainer .uiBox").html());
-    
-    var rightHandle = $("#rightContainer .ui-slider-handle");
-    $("#rightContainer .yearSlider").slider({
-      min: minYear,
-      max: maxYear,
-      value: secondYear,
-      step: 1,
-      create: function() {
-        rightHandle.text($(this).slider("value"));
-      },
-      slide: function(event, ui) {
-        rightHandle.text(ui.value);
-      }
-    });
-    
-    // 연도별 눈끔 그리기
-    var canvasList = document.getElementsByTagName("canvas");
-    for (var i=0; canvasList.length; i++) {
-      var canvas = canvasList[i];
-      if (canvas == null || canvas.getContext == null) return;
-      var ctx = canvas.getContext("2d");
-      ctx.fillStyle="yellow";
-      ctx.strokeStyle="yellow";
-      ctx.font='11px "맑은 고딕"';
-      ctx.fillText("영상년도:", 0,12, 40);
-      ctx.fillText("DEM년도:", 0,51, 40);
-      ctx.font='8px "맑은 고딕"';
-      
-      ctx.fillStyle="#FFF";
-      ctx.strokeStyle="#FFF";
-      var delta = 300.0/(maxYear-minYear);
-      
-      var y = 10;
-      for (var year=minYear, x=45; year<=maxYear; year++, x += delta) {
-        if (photoYearArray.indexOf(year) >= 0) {
-          ctx.fillText(year, x,y, 30);
-          ctx.moveTo(x+11,y+5);
-          ctx.lineTo(x+11,y+15);
-          ctx.stroke();
-        }
-      }
-
-      y = 50;
-      for (var year=minYear, x=45; year<=maxYear; year++, x += delta) {
-        if (demYearArray.indexOf(year) >= 0) {
-          ctx.fillText(year, x,y, 30);
-          ctx.moveTo(x+11,y-10);
-          ctx.lineTo(x+11,y-25);
-          ctx.stroke();
-        }
-      }
-    }
-    
-/*
-*/    
-  }
-
   function initMenuSlider() {
     // http://www.menucool.com/jquery-slider
     var thumbnailSliderOptions =
@@ -254,9 +151,129 @@
     $( "#thumbnail-slider" ).tooltip();
   }
   
-  function showInfo(info) {
+  function showInfo(option) {
+    if (!option) 
+      return;
+      
+    $(".uiBox").hide();
     
+    $("#leftContainer .uiBox h2").text(option.title);
+
+    var photoYearArray = option.photoYearArray;
+    var demYearArray = option.demYearArray;
+    
+    if (!photoYearArray || !demYearArray)
+      return;
+    if (!photoYearArray.indexOf || !demYearArray.indexOf)
+      return;
+    if (!photoYearArray.length || !demYearArray.length)
+      return;
+    if (photoYearArray.length == 1) {
+      photoYearArray.push(photoYearArray[0]);
+    }
+    if (demYearArray.length == 1) {
+      demYearArray.push(demYearArray[0]);
+    }
+    
+    var minYear = Math.min(Math.min.apply(Math, photoYearArray), Math.min.apply(Math, demYearArray));
+    var maxYear = Math.max(Math.max.apply(Math, photoYearArray), Math.max.apply(Math, demYearArray));
+    
+    var fullYears = photoYearArray;
+    $.each(demYearArray, function(i, el){
+      if ($.inArray(el, fullYears) === -1) fullYears.push(el);
+    });
+    fullYears = fullYears.sort();
+    var secondIndex = fullYears.length - 2;
+    if (secondIndex < 0) secondIndex = 0;
+    var secondYear = fullYears[secondIndex];
+    
+    var leftHandle = $("#leftContainer .ui-slider-handle");
+    $("#leftContainer .yearSlider").slider({
+      min: minYear,
+      max: maxYear,
+      value: maxYear,
+      step: 1,
+      create: function() {
+        leftHandle.text($(this).slider("value"));
+      },
+      slide: function(event, ui) {
+        leftHandle.text(ui.value);
+      }
+    });
+    
+    // UI Box 복사
+    $("#rightContainer .uiBox").html($("#leftContainer .uiBox").html());
+    
+    var rightHandle = $("#rightContainer .ui-slider-handle");
+    $("#rightContainer .yearSlider").slider({
+      min: minYear,
+      max: maxYear,
+      value: secondYear,
+      step: 1,
+      create: function() {
+        rightHandle.text($(this).slider("value"));
+      },
+      slide: function(event, ui) {
+        rightHandle.text(ui.value);
+      }
+    });
+
+    // UI BOX 보이기
+    $("#leftContainer .uiBox").show("drop", {}, 500);
+    $("#rightContainer .uiBox").show("drop", {}, 500);
+        
+    // 연도별 눈끔 그리기
+    var canvasList = document.getElementsByTagName("canvas");
+    for (var i=0; canvasList.length; i++) {
+      var canvas = canvasList[i];
+      if (canvas == null) return;
+      
+      var ctx = canvas.getContext("2d");
+      if (!ctx)
+        continue;
+        
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle="yellow";
+      ctx.strokeStyle="yellow";
+      ctx.font='11px "맑은 고딕"';
+      ctx.fillText("영상년도:", 0,12, 40);
+      ctx.fillText("DEM년도:", 0,51, 40);
+      ctx.font='8px "맑은 고딕"';
+      
+      ctx.fillStyle="#FFF";
+      ctx.strokeStyle="#FFF";
+      var delta = 300.0/(maxYear-minYear);
+      
+      var y = 10;
+      for (var year=minYear, x=45; year<=maxYear; year++, x += delta) {
+        if (photoYearArray.indexOf(year) >= 0) {
+          ctx.beginPath();
+          ctx.fillText(year, x,y, 30);
+          ctx.moveTo(x+11,y+5);
+          ctx.lineTo(x+11,y+15);
+          ctx.stroke();
+        }
+      }
+
+      y = 50;
+      for (var year=minYear, x=45; year<=maxYear; year++, x += delta) {
+        if (demYearArray.indexOf(year) >= 0) {
+          ctx.beginPath();
+          ctx.fillText(year, x,y, 30);
+          ctx.moveTo(x+11,y-10);
+          ctx.lineTo(x+11,y-25);
+          ctx.stroke();
+        }
+      }
+    }
+
+		if (infoObj.view)
+			viewer.camera.flyTo(infoObj.view);
   }
+
+	function hideInfo() {
+		$(".uiBox").hide();
+	}
 
   var viewer, slaveViewer;
   function initCesium() {
@@ -334,7 +351,7 @@
   }
 
   var demProvider;
-  function initTerrains() {
+  function initTerrains(option) {
     demProvider = {};
     demProvider["dem_2007"] = new Cesium.GeoserverTerrainProvider({
       url : "/geoserver/gwc/service/wms",
@@ -364,9 +381,6 @@
       maxLevel: 17,
       formatImage : {format : "image/png", extension: "png"}
     });
-    
-    // default terrain
-    setDem("dem_2016");
   }
 
   var crrDemName = "";
@@ -460,11 +474,11 @@
   <div id="wrap">
     <div id="leftContainer">
       <div id="leftCesium"></div>
-      <div class="uiBox">
+      <div class="uiBox" style="display:none;">
         <h2>라파즈 한라시멘트 - 가행광산</h2>
         <canvas class="photoYears" width="370" height="55"></canvas >
-        <div id="leftYear" class="yearSlider">
-          <div id="leftYearHandle" class="ui-slider-handle"></div>
+        <div class="yearSlider">
+          <div class="ui-slider-handle"></div>
         </div>
         <div class="buttonBox">
           <button>영상보기</button>
@@ -477,7 +491,7 @@
     
     <div id="rightContainer">
       <div id="rightCesium"></div>
-      <div class="uiBox">
+      <div class="uiBox" style="display:none;">
       </div>
     </div>
     
