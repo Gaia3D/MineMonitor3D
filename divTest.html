@@ -193,9 +193,24 @@
     
     $("#leftContainer .uiBox h2").text(option.title);
 
-    var photoYearArray = option.photoYearArray;
+    var photoYearArray = [];
+    if (option && option.photoYearArray && option.photoYearArray.length) {
+      for (var i=0; i<option.photoYearArray.length; i++) {
+        var item = option.photoYearArray[i];
+        if (item.year)
+          photoYearArray.push(item.year);
+      }
+    }
     if (!photoYearArray) photoYearArray = [(new Date()).getFullYear()];
-    var demYearArray = option.demYearArray;
+
+    var demYearArray = [];
+    if (option && option.demYearArray && option.demYearArray.length) {
+      for (var i=0; i<option.demYearArray.length; i++) {
+        var item = option.demYearArray[i];
+        if (item.year)
+          demYearArray.push(item.year);
+      }
+    }
     if (!demYearArray) demYearArray = [(new Date()).getFullYear()];
     
     if (!photoYearArray || !demYearArray)
@@ -214,7 +229,7 @@
     var minYear = Math.min(Math.min.apply(Math, photoYearArray), Math.min.apply(Math, demYearArray));
     var maxYear = Math.max(Math.max.apply(Math, photoYearArray), Math.max.apply(Math, demYearArray));
     
-    var fullYears = photoYearArray;
+    var fullYears = photoYearArray.slice(0);
     $.each(demYearArray, function(i, el){
       if ($.inArray(el, fullYears) === -1) fullYears.push(el);
     });
@@ -321,6 +336,17 @@
 
     slaveViewer.scene.preRender.addEventListener(function(){
       if(slaveViewer.scene.mode !== Cesium.SceneMode.MORPHING){
+        // 카마라 위치 확인 위해 표시
+        if (false) {
+          var pos = masterCamera.position; 
+          var carto  = Cesium.Ellipsoid.WGS84.cartesianToCartographic(pos);     
+          var lon = Cesium.Math.toDegrees(carto.longitude); 
+          var lat = Cesium.Math.toDegrees(carto.latitude);         
+          $("h4").text(
+            "("+lon+","+lat+","+carto.height+")"
+            +"("+Cesium.Math.toDegrees(masterCamera.heading)+","+Cesium.Math.toDegrees(masterCamera.pitch)+","+Cesium.Math.toDegrees(masterCamera.roll)+")"
+          );
+        }
         slaveCamera.setView({
           destination : masterCamera.position,
           orientation: {
