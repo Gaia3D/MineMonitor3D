@@ -22,12 +22,26 @@ siteInfo["lafarge"] =
     {year:2014,layer:"Sangji:2014_WGS84"},
     {year:2015,layer:"Sangji:2015_UAV_wgs84"},
     {year:2016,layer:"Sangji:2016_merge_WGS84"}
-  ], 
-  demYearArray:[
+  ] 
+  ,demYearArray:[
     {year:2007,layer:"dem_2007"},
     {year:2014,layer:"dem_2014"},
     {year:2015,layer:"dem_2015"},
     {year:2016,layer:"dem_2016"}
+  ]
+  ,photoDeltaArray: [
+    {fromYear: 2016, toYear: 2015, layer:"Sangji:PhotoDeltaDelta_2016-2015"}
+    ,{fromYear: 2015, toYear: 2014, layer:"Sangji:PhotoDeltaDelta_2015-2014"}
+  ]
+  ,negiArray: [
+  ]
+  ,demDeltaArray: [
+    {fromYear: 2016, toYear: 2015, layer:"Sangji:DemDelta_2016-2015_5187"}
+    ,{fromYear: 2015, toYear: 2014, layer:"Sangji:DemDelta_2015-2014_5187"}
+    ,{fromYear: 2015, toYear: 2007, layer:"Sangji:DemDelta_2015-2007_5187"}
+    ,{fromYear: 2014, toYear: 2007, layer:"Sangji:DemDelta_2014-2007_5187"}
+  ]
+  ,chgZoneArray: [
   ]
 }
 
@@ -48,10 +62,7 @@ siteInfo["dongyang"] =
     {year:2012,layer:"Sangji:2012_dongyang_WGS84"}
   ], 
   demYearArray:[
-    {year:2007,layer:"dem_2007"},
-    {year:2014,layer:"dem_2014"},
-    {year:2015,layer:"dem_2015"},
-    {year:2016,layer:"dem_2016"}
+    {year:2007,layer:"dem_2007"}
   ]
 }
 

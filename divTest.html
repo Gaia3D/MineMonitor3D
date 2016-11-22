@@ -74,12 +74,12 @@
   </style>
 
   <script src="lib/jquery-1.12.3.min.js" type="text/javascript"></script>
-	<script src="lib/jquery-ui.js" type="text/javascript"></script>
+  <script src="lib/jquery-ui.js" type="text/javascript"></script>
   <script src="lib/thumbnail-slider.js" type="text/javascript"></script>
   <script src="cesium_1.24/Build/Cesium/Cesium.js" type="text/javascript"></script>
   <script src="lib/GeoserverTerrainProvider.js" type="text/javascript"></script>
   <script src="lib/WCSTerrainProvider.js" type="text/javascript"></script>
-	<script src="info/site_info.js" type="text/javascript"></script>
+  <script src="info/site_info.js" type="text/javascript"></script>
   <script>
   // On Init
   $( function(){
@@ -93,18 +93,18 @@
       destination : Cesium.Cartesian3.fromDegrees(128.48, 37.31, 180000)
     });
 
-     // 지형 추가
-     initTerrains();
+    // 지형 추가
+    initTerrains();
      
-     // WMS Layer 추가
-     initWmsLayers();
+    // WMS Layer 추가
+    initWmsLayers();
      
-     initPoi();
+    initPoi();
   });
   
   // 브라우저 크기 조정시 div 크기 재조정
   $(window).resize(initDivSize);
-  
+ 
   function initButton() {
     $(".uiBox button").off("click").on("click", onButton);
   }
@@ -114,18 +114,39 @@
     var id = obj.attr("id");
     var parent = obj.parent().parent().parent();
     var viewId = parent.attr("id");;
-    //alert("ID: "+ id + ", View: " + viewId);
+    console.log("ID: "+ id + ", View: " + viewId);
     
     if (viewId == "leftContainer") {
       $("#leftContainer button").removeClass("down");
       obj.addClass("down");
       
+      leftCommand(id);
     }
     else if (viewId == "rightContainer") {
       $("#rightContainer button").removeClass("down");
       obj.addClass("down");
-
-      }
+      
+      rightCommand(id);
+    }
+  }
+  
+  function leftCommand(id) {
+    switch (id) {
+    case 'btnPhotoDiff':
+      setPhotoDelta(crrLeftYear, crrRightYear, true);
+      break;
+    case "btnPhotoView":
+      removeTheme(true);
+      break;
+    }
+  }
+  
+  function rightCommand(id) {
+    switch (id) {
+      case 'btnPhotoDiff':
+      setPhotoDelta(crrLeftYear, crrRightYear, false);
+      break;
+    }
   }
   
   // set divs size
@@ -176,7 +197,7 @@
       if (!crrSiteInfo) 
         hideInfo();
       else
-        showInfo(crrSiteInfo);		
+        showInfo(crrSiteInfo);    
     });
     
     //////////////
@@ -184,6 +205,8 @@
     $( "#thumbnail-slider" ).tooltip();
   }
   
+  var crrLeftYear = null;
+  var crrRightYear = null;
   function showInfo(option) {
     if (!option) 
       return;
@@ -248,9 +271,15 @@
         leftHandle.text($(this).slider("value"));
       },
       slide: function(event, ui) {
+        crrLeftYear = ui.value;
         leftHandle.text(ui.value);
+        setDem(ui.value, true);
+        setPhoto(ui.value, true);
       }
     });
+    setDem(maxYear, true);
+    setPhoto(maxYear, true);
+    crrLeftYear = maxYear;
     
     // UI Box 복사
     $("#rightContainer .uiBox").html($("#leftContainer .uiBox").html());
@@ -266,9 +295,15 @@
         rightHandle.text($(this).slider("value"));
       },
       slide: function(event, ui) {
+        crrRightYear = ui.value;
         rightHandle.text(ui.value);
+        setDem(ui.value, false);
+        setPhoto(ui.value, false);
       }
     });
+    setDem(secondYear, false);
+    setPhoto(secondYear, false);
+    crrRightYear = secondYear;
 
     // UI BOX 보이기
     $("#leftContainer .uiBox").show("drop", {}, 500);
@@ -320,9 +355,9 @@
     }
   }
 
-	function hideInfo() {
-		$(".uiBox").hide();
-	}
+  function hideInfo() {
+    $(".uiBox").hide();
+  }
 
   var viewer, slaveViewer;
   function initCesium() {
@@ -336,16 +371,16 @@
 
     slaveViewer.scene.preRender.addEventListener(function(){
       if(slaveViewer.scene.mode !== Cesium.SceneMode.MORPHING){
-        // 카마라 위치 확인 위해 표시
+        // 카메라 위치 확인 위해 표시
         if (false) {
           var pos = masterCamera.position; 
           var carto  = Cesium.Ellipsoid.WGS84.cartesianToCartographic(pos);     
           var lon = Cesium.Math.toDegrees(carto.longitude); 
           var lat = Cesium.Math.toDegrees(carto.latitude);         
-          $("h4").text(
+          var msg =
             "("+lon+","+lat+","+carto.height+")"
-            +"("+Cesium.Math.toDegrees(masterCamera.heading)+","+Cesium.Math.toDegrees(masterCamera.pitch)+","+Cesium.Math.toDegrees(masterCamera.roll)+")"
-          );
+            +"("+Cesium.Math.toDegrees(masterCamera.heading)+","+Cesium.Math.toDegrees(masterCamera.pitch)+","+Cesium.Math.toDegrees(masterCamera.roll)+")";
+          console.log(msg);
         }
         slaveCamera.setView({
           destination : masterCamera.position,
@@ -359,6 +394,7 @@
     });
   }
 
+  var defaultTrrain = null;
   function setDefaultDataset() {
     var DEFALUT_IMAGE = "ESRI World Imagery";
     var DEFALUT_TERRAIN = "STK World Terrain meshes";
@@ -381,6 +417,7 @@
       provider = viewer.baseLayerPicker.viewModel.terrainProviderViewModels[i];
       if (provider.name == DEFALUT_TERRAIN) {
         terrainProvider = provider;
+        defaultTrrain = provider;
         break;
       }
     }
@@ -443,96 +480,267 @@
     });
   }
 
-  var crrDemName = "";
-  function setDem(demName) {
-    if (demName == undefined) {
-      console.error("Unknown DEM Selected!");
+  var crrLeftDem = null;
+  var crrRightDem = null;
+  function setDem(year, isLeft=true) {
+    if (year == undefined) {
       return;
     }
-    if (crrDemName) {
-      if (crrDemName != demName) {
-        viewer.terrainProvider = demProvider[demName];
-        crrDemName = demName;
+    
+    var demYearArray = siteInfo[crrSite].demYearArray;
+    
+    // 가장 가까운 과거 년도 판단
+    var selectedYear = null;
+    var selectedLayer = null;
+    for (var i=0; i<demYearArray.length; i++) {
+      var infoYear = demYearArray[i].year;
+      var infoLayer = demYearArray[i].layer;
+      
+      if (infoYear <= year) {
+        selectedYear = infoYear;
+        selectedLayer = infoLayer;
+      } else {
+        break;
       }
-    } else {
-      viewer.terrainProvider = demProvider[demName];
-      crrDemName = demName;
+      
+      if (!selectedYear) {
+        selectedYear = infoYear;
+        selectedLayer = infoLayer;
+      }
+    }
+
+    // 현재 설정값과 확인해 다르면 적용
+    if (isLeft) {
+      if (crrLeftDem) {
+        if (crrLeftDem != selectedLayer) {
+          viewer.terrainProvider = demProvider[selectedLayer];
+          crrLeftDem = selectedLayer;
+        }
+        else {
+          // 변화 없음 그냥 그대로
+        }
+      } else {
+        viewer.terrainProvider = demProvider[selectedLayer];
+        crrLeftDem = selectedLayer;
+      }
+    }
+    else {
+      if (crrRightDem) {
+        if (crrRightDem != selectedLayer) {
+          slaveViewer.terrainProvider = demProvider[selectedLayer];
+          crrRightDem = selectedLayer;
+        }
+        else {
+          // 변화 없음 그냥 그대로
+        }
+      } else {
+        slaveViewer.terrainProvider = demProvider[selectedLayer];
+        crrRightDem = selectedLayer;
+      }
     }
   }
 
-	var imgProvider = {};
-	function initWmsLayers() {
-    addWmsLayer("lafarge","photo",2014, 'Sangji:2013_WGS84');
-    addWmsLayer("lafarge","photo",2015, 'Sangji:2015_UAV_wgs84');
-    addWmsLayer("lafarge","photo",2016, 'Sangji:2016_merge_WGS84');
-    addWmsLayer("lafarge","restore",2016, 'Sangji:restore_2016_2015');
-    addWmsLayer("lafarge","restore",2015, 'Sangji:restore_2015_2014');
-    addWmsLayer("lafarge","dig",2015, 'Sangji:dig_2015_2014');
-    addWmsLayer("lafarge","dem_delta",2016, 'Sangji:DemDelta_2016-2015_5187');
-    addWmsLayer("lafarge","dem_delta",2015, 'Sangji:DemDelta_2015-2007_5187');
-    addWmsLayer("lafarge","photo_delta",2016, 'Sangji:PhotoDeltaDelta_2016-2015');
-    addWmsLayer("lafarge","photo_delta",2015, 'Sangji:PhotoDeltaDelta_2015-2014');
+  var crrLeftPhoto = null;
+  var crrRightPhoto = null;
+  function setPhoto(year, isLeft=true) {
+    if (year == undefined) {
+      return;
+    }
     
-    var crrYear = 2016;
-    var crrSite = "lafarge";
-    var crrPhoto = "photo";
-    var crrTheme = null;
-	}
+    var photoYearArray = siteInfo[crrSite].photoYearArray;
+    
+    // 가장 가까운 과거 년도 판단
+    var selectedYear = null;
+    var selectedLayer = null;
+    for (var i=0; i<photoYearArray.length; i++) {
+      var infoYear = photoYearArray[i].year;
+      var infoLayer = photoYearArray[i].layer;
+      
+      if (infoYear <= year) {
+        selectedYear = infoYear;
+        selectedLayer = infoLayer;
+      } else {
+        break;
+      }
+      
+      if (!selectedYear) {
+        selectedYear = infoYear;
+        selectedLayer = infoLayer;
+      }
+    }
+    
+    var photoProvider = imgProvider[selectedLayer];
+    if (!photoProvider) {
+      console.error("WMS Layer "+selectedLayer+" 찾지 못함");
+      return;
+    }
+    
+    // 현재 설정값과 확인해 다르면 적용
+    if (isLeft) {
+      while (viewer.scene.imageryLayers.get(1))
+        viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(1));
+      
+      if (crrLeftPhoto) {
+        if (crrLeftPhoto != selectedLayer) {
+          viewer.scene.imageryLayers.addImageryProvider(photoProvider);
+          crrLeftPhoto = selectedLayer;
+        }
+        else {
+          // 변화 없음 그냥 그대로
+        }
+      } else {
+        viewer.scene.imageryLayers.addImageryProvider(photoProvider);
+        crrLeftPhoto = selectedLayer;
+      }
+    }
+    else {
+      while (slaveViewer.scene.imageryLayers.get(1))
+        slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(1));
+      
+      if (crrRightPhoto) {
+        if (crrRightPhoto != selectedLayer) {
+          slaveViewer.scene.imageryLayers.addImageryProvider(photoProvider);
+          crrRightPhoto = selectedLayer;
+        }
+        else {
+          // 변화 없음 그냥 그대로
+        }
+      } else {
+        slaveViewer.scene.imageryLayers.addImageryProvider(photoProvider);
+        crrRightPhoto = selectedLayer;
+      }
+    }
+  }
+
+  var imgProvider = {};
+  var crrSite = "lafarge";
+  function initWmsLayers() {
+    addWmsLayer('Sangji:2013_WGS84');
+    addWmsLayer('Sangji:2015_UAV_wgs84');
+    addWmsLayer('Sangji:2016_merge_WGS84');
+    addWmsLayer('Sangji:restore_2016_2015');
+    addWmsLayer('Sangji:restore_2015_2014');
+    addWmsLayer('Sangji:dig_2015_2014');
+    addWmsLayer('Sangji:DemDelta_2016-2015_5187');
+    addWmsLayer('Sangji:DemDelta_2015-2007_5187');
+    addWmsLayer('Sangji:PhotoDeltaDelta_2016-2015');
+    addWmsLayer('Sangji:PhotoDeltaDelta_2015-2014');
+  }
+
+  function addWmsLayer(wmsLayer) {
+    imgProvider[wmsLayer] = new Cesium.WebMapServiceImageryProvider({
+      url : '/geoserver/gwc/service/wms',
+      layers : wmsLayer,
+      parameters : {
+        transparent : 'true',
+        format : 'image/png'
+      }
+    });
+  }
   
-	function addWmsLayer(site, theme, year, wmsLayer) {
-		var id = site+":"+theme+":"+year;
-		
-		imgProvider[id] = new Cesium.WebMapServiceImageryProvider({
-			url : '/geoserver/gwc/service/wms',
-			layers : wmsLayer,
-			parameters : {
-				transparent : 'true',
-				format : 'image/png'
-			}
-		});
-	}
-	
-	function setWmsLayer(option) {
-		var year = option.year ? option.year : crrYear;
-		var site = option.site ? option.site : crrSite;
-		
-		crrYear = year;
-		crrSite = site;
-		
-		var photo = option.photo ? option.photo : crrPhoto;
-		var theme = option.theme ? option.theme : crrTheme;
-		
-		var photoId = site+":"+photo+":"+year;
-		var themeId = site+":"+theme+":"+year;
-		
-		var photoProvider = imgProvider[photoId];
-		var themeProvider = imgProvider[themeId];
-		
+  var crrLeftTheme = null;
+  var crrRightTheme = null;
+  function setPhotoDelta(year1, year2, isLeft=true) {
+    var photoDeltaArray = siteInfo[crrSite].photoDeltaArray;
+    
+    var layerName = null;
+    for (var i=0; i<photoDeltaArray.length; i++) {
+      var obj = photoDeltaArray[i];
+      if ((obj.fromYear == year1 && obj.toYear == year2) 
+        || (obj.fromYear == year2 && obj.toYear == year1)) {
+        layerName = obj.layer;
+        break;
+      }
+    }
+    
+    if (!layerName) {
+      console.error("PhotoDelta "+fromYear+"+"+toYear+" unknown.");
+      return;
+    }
+    
+    var provider = imgProvider[layerName];
+    if (!provider) {
+      console.error("PhotoDelta "+fromYear+"+"+toYear+" unknown.");
+      return;
+    }
+    
+    if (isLeft) {
+      while (viewer.scene.imageryLayers.get(2))
+        viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
+    
+      if (crrLeftTheme) {
+          viewer.scene.imageryLayers.addImageryProvider(provider);
+          crrLeftTheme = layerName;
+      } else {
+        viewer.scene.imageryLayers.addImageryProvider(provider);
+        crrLeftTheme = layerName;
+      }
+    } else {
+      while (slaveViewer.scene.imageryLayers.get(2))
+        slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
+    
+      if (crrRightTheme) {
+          slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+          crrRightTheme = layerName;
+      } else {
+        slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+        crrRightTheme = layerName;
+      }
+    }
+  }
+  
+  function removeTheme(isLeft=true) {
+    if (isLeft) {
+      while (viewer.scene.imageryLayers.get(2))
+        viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
+    }
+    else {
+      while (slaveViewer.scene.imageryLayers.get(2))
+        slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
+    }
+  } 
+  
+  function setWmsLayer(option) {
+    var year = option.year ? option.year : crrYear;
+    var site = option.site ? option.site : crrSite;
+    
+    crrYear = year;
+    crrSite = site;
+    
+    var photo = option.photo ? option.photo : crrPhoto;
+    var theme = option.theme ? option.theme : crrTheme;
+    
+    var photoId = site+":"+photo+":"+year;
+    var themeId = site+":"+theme+":"+year;
+    
+    var photoProvider = imgProvider[photoId];
+    var themeProvider = imgProvider[themeId];
+    
 
-		while (viewer.scene.imageryLayers.get(1))
-			viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(1));
+    while (viewer.scene.imageryLayers.get(1))
+      viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(1));
 
-		if (photoProvider) {
-			viewer.scene.imageryLayers.addImageryProvider(photoProvider);
-			crrPhoto = photo;
-		}
-		
-		if (themeProvider) {
-			viewer.scene.imageryLayers.addImageryProvider(themeProvider);
-			crrTheme = theme;
-		}
-	}
+    if (photoProvider) {
+      viewer.scene.imageryLayers.addImageryProvider(photoProvider);
+      crrPhoto = photo;
+    }
+    
+    if (themeProvider) {
+      viewer.scene.imageryLayers.addImageryProvider(themeProvider);
+      crrTheme = theme;
+    }
+  }
 
-	///////////////
-	// POI DISPLAY
-	// TODO: WFS(GeoJSON)를 데이터 소스로 이용하게 수정
+  ///////////////
+  // POI DISPLAY
+  // TODO: WFS(GeoJSON)를 데이터 소스로 이용하게 수정
   function initPoi() {
     var poiData = [
       {"Mine_Name" : "Dongyang Cement", "note" : "Inactive", "coordinates" : [129.17796849301573, 37.40930682240848]}
       ,{"Mine_Name" : "Lafarge Halla Cement", "note" : "Active", "coordinates" : [128.9819394, 37.5629028]}
       ,{"Mine_Name" : "Ssangyoung Resource Development Cement", "note" : "Active", "coordinates" : [129.16558055702833, 37.40219880356674]}
-      ,{"Mine_Name" : "Asia Cement", "note" : "Active", "coordinates" : [128.30577632164253, 37.258690307680425]}
-      ,{"Mine_Name" : "Hyundai Cement", "note" : "Active", "coordinates" : [128.35818094918238, 37.27129997447317]}
+      ,{"Mine_Name" : "Asia Cement", "note" : "Inactive", "coordinates" : [128.30577632164253, 37.258690307680425]}
+      ,{"Mine_Name" : "Hyundai Cement", "note" : "Inactive", "coordinates" : [128.35818094918238, 37.27129997447317]}
       ,{"Mine_Name" : "Ssangyoung Cement", "note" : "Inactive", "coordinates" : [129.03114793808132, 37.47607547914213]}
     ];
 
@@ -605,9 +813,10 @@
         </div>
         <div class="buttonBox">
           <button id="btnPhotoView" class="down">영상보기</button>
-          <button id="btnPhotoDiff">영상변화분석</button>
-          <button id="btnDemDiff">지형변화분석</button>
-          <button id="btnDiffArea">변화지역보기</button>
+          <button id="btnPhotoDiff">차영상</button>
+          <button id="btnVegi">식생분포</button>
+          <button id="btnDemDiff">지형변화</button>
+          <button id="btnDiffArea">변화지역</button>
         </div>
       </div>
     </div>
