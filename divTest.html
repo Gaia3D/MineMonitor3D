@@ -70,9 +70,7 @@
   .photoYears {position:relative;}
   .yearSlider {position:absolute; top:58px; left:70px; width:300px;}
   .buttonBox {width: 380px;}
-  
   </style>
-
   <script src="lib/jquery-1.12.3.min.js" type="text/javascript"></script>
   <script src="lib/jquery-ui.js" type="text/javascript"></script>
   <script src="lib/thumbnail-slider.js" type="text/javascript"></script>
@@ -132,19 +130,40 @@
   
   function leftCommand(id) {
     switch (id) {
+    case "btnPhotoView":
+      removeTheme(true);
+      break;
     case 'btnPhotoDiff':
       setPhotoDelta(crrLeftYear, crrRightYear, true);
       break;
-    case "btnPhotoView":
-      removeTheme(true);
+    case 'btnDemDiff':
+      setDemDelta(crrLeftYear, crrRightYear, true);
+      break;
+    case 'btnNegi':
+      setNegiLayer(crrLeftYear, true);
+      break;
+    case 'btnChgZone':
+      setChgZone(crrLeftYear, true);
       break;
     }
   }
   
   function rightCommand(id) {
     switch (id) {
-      case 'btnPhotoDiff':
+    case "btnPhotoView":
+      removeTheme(false);
+      break;
+    case 'btnPhotoDiff':
       setPhotoDelta(crrLeftYear, crrRightYear, false);
+      break;
+    case 'btnDemDiff':
+      setDemDelta(crrLeftYear, crrRightYear, false);
+      break;
+    case 'btnNegi':
+      setNegiLayer(crrLeftYear, false);
+      break;
+    case 'btnChgZone':
+      setChgZone(crrLeftYear, false);
       break;
     }
   }
@@ -275,6 +294,24 @@
         leftHandle.text(ui.value);
         setDem(ui.value, true);
         setPhoto(ui.value, true);
+        var crrBtn = $("#leftContainer .down").attr("id");
+        switch (crrBtn) {
+          case "btnPhotoView":
+            removeTheme(true);
+            break;
+          case "btnPhotoDiff":
+            setPhotoDelta(crrLeftYear, crrRightYear, true);
+            break;
+          case "btnDemDiff":
+            setDemDelta(crrLeftYear, crrRightYear, true);
+            break;
+          case "btnNegi":
+            setNegiLayer(crrLeftYear, true);
+            break;
+          case "btnChgZone":
+            setChgZone(crrLeftYear, true);
+            break;
+        }
       }
     });
     setDem(maxYear, true);
@@ -299,6 +336,24 @@
         rightHandle.text(ui.value);
         setDem(ui.value, false);
         setPhoto(ui.value, false);
+        var crrBtn = $("#rightContainer .down").attr("id");
+        switch (crrBtn) {
+          case "btnPhotoView":
+            removeTheme(false)
+            break;
+          case "btnPhotoDiff":
+            setPhotoDelta(crrLeftYear, crrRightYear, false);
+            break;
+          case "btnDemDiff":
+            setDemDelta(crrLeftYear, crrRightYear, false);
+            break;
+          case "btnNegi":
+            setNegiLayer(crrRightYear, false);
+            break;
+          case "btnChgZone":
+            setChgZone(crrRightYear, false);
+            break;
+        }
       }
     });
     setDem(secondYear, false);
@@ -615,16 +670,49 @@
   var imgProvider = {};
   var crrSite = "lafarge";
   function initWmsLayers() {
-    addWmsLayer('Sangji:2013_WGS84');
-    addWmsLayer('Sangji:2015_UAV_wgs84');
-    addWmsLayer('Sangji:2016_merge_WGS84');
-    addWmsLayer('Sangji:restore_2016_2015');
-    addWmsLayer('Sangji:restore_2015_2014');
-    addWmsLayer('Sangji:dig_2015_2014');
-    addWmsLayer('Sangji:DemDelta_2016-2015_5187');
-    addWmsLayer('Sangji:DemDelta_2015-2007_5187');
-    addWmsLayer('Sangji:PhotoDeltaDelta_2016-2015');
-    addWmsLayer('Sangji:PhotoDeltaDelta_2015-2014');
+    for (var siteId in siteInfo) {
+      infoObj = siteInfo[siteId];
+
+      var infoArray = infoObj.photoYearArray;
+      if (infoArray) for (var i=0; i<infoArray.length; i++) {
+        var layer = infoArray[i].layer;
+        if (!imgProvider[layer]) {
+          addWmsLayer(layer);
+        }
+      }
+
+      infoArray = infoObj.photoDeltaArray;
+      if (infoArray) for (var i=0; i<infoArray.length; i++) {
+        var layer = infoArray[i].layer;
+        if (!imgProvider[layer]) {
+          addWmsLayer(layer);
+        }
+      }
+
+      infoArray = infoObj.negiArray;
+      if (infoArray) for (var i=0; i<infoArray.length; i++) {
+        var layer = infoArray[i].layer;
+        if (!imgProvider[layer]) {
+          addWmsLayer(layer);
+        }
+      }
+
+      infoArray = infoObj.demDeltaArray;
+      if (infoArray) for (var i=0; i<infoArray.length; i++) {
+        var layer = infoArray[i].layer;
+        if (!imgProvider[layer]) {
+          addWmsLayer(layer);
+        }
+      }
+
+      infoArray = infoObj.chgZoneArray;
+      if (infoArray) for (var i=0; i<infoArray.length; i++) {
+        var layer = infoArray[i].layer;
+        if (!imgProvider[layer]) {
+          addWmsLayer(layer);
+        }
+      }
+    }
   }
 
   function addWmsLayer(wmsLayer) {
@@ -654,13 +742,13 @@
     }
     
     if (!layerName) {
-      console.error("PhotoDelta "+fromYear+"+"+toYear+" unknown.");
+      console.error("PhotoDelta "+year1+"+"+year2+" unknown.");
       return;
     }
     
     var provider = imgProvider[layerName];
     if (!provider) {
-      console.error("PhotoDelta "+fromYear+"+"+toYear+" unknown.");
+      console.error("PhotoDelta "+year1+"+"+year2+" unknown.");
       return;
     }
     
@@ -669,9 +757,13 @@
         viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
     
       if (crrLeftTheme) {
+        if (crrLeftTheme != layerName) {
+          removeTheme(isLeft);
           viewer.scene.imageryLayers.addImageryProvider(provider);
           crrLeftTheme = layerName;
+        }
       } else {
+        removeTheme(isLeft);
         viewer.scene.imageryLayers.addImageryProvider(provider);
         crrLeftTheme = layerName;
       }
@@ -680,9 +772,182 @@
         slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
     
       if (crrRightTheme) {
+        if (crrRightTheme != layerName) {
+          removeTheme(isLeft);
           slaveViewer.scene.imageryLayers.addImageryProvider(provider);
           crrRightTheme = layerName;
+        }
       } else {
+        removeTheme(isLeft);
+        slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+        crrRightTheme = layerName;
+      }
+    }
+  }
+  
+  function setDemDelta(year1, year2, isLeft=true) {
+    var demDeltaArray = siteInfo[crrSite].demDeltaArray;
+    
+    var layerName = null;
+    for (var i=0; i<demDeltaArray.length; i++) {
+      var obj = demDeltaArray[i];
+      if ((obj.fromYear == year1 && obj.toYear == year2) 
+        || (obj.fromYear == year2 && obj.toYear == year1)) {
+        layerName = obj.layer;
+        break;
+      }
+    }
+    
+    if (!layerName) {
+      console.error("DemDelta "+year1+"+"+year2+" unknown.");
+      return;
+    }
+    
+    var provider = imgProvider[layerName];
+    if (!provider) {
+      console.error("DemDelta "+year1+"+"+year2+" unknown.");
+      return;
+    }
+    
+    if (isLeft) {
+      while (viewer.scene.imageryLayers.get(2))
+        viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
+    
+      if (crrLeftTheme) {
+        if (crrLeftTheme != layerName) {
+          removeTheme(isLeft);
+          viewer.scene.imageryLayers.addImageryProvider(provider);
+          crrLeftTheme = layerName;
+        }
+      } else {
+        removeTheme(isLeft);
+        viewer.scene.imageryLayers.addImageryProvider(provider);
+        crrLeftTheme = layerName;
+      }
+    } else {
+      while (slaveViewer.scene.imageryLayers.get(2))
+        slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
+    
+      if (crrRightTheme) {
+        if (crrRightTheme != layerName) {
+          removeTheme(isLeft);
+          slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+          crrRightTheme = layerName;
+        }
+      } else {
+        removeTheme(isLeft);
+        slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+        crrRightTheme = layerName;
+      }
+    }
+  }
+  
+  function setNegiLayer(year, isLeft=true) {
+    var negiArray = siteInfo[crrSite].negiArray;
+    
+    var layerName = null;
+    for (var i=0; i<negiArray.length; i++) {
+      var obj = negiArray[i];
+      if (obj.year == year) {
+        layerName = obj.layer;
+        break;
+      }
+    }
+    
+    if (!layerName) {
+      console.error("NegiLayer "+year+" unknown.");
+      return;
+    }
+    
+    var provider = imgProvider[layerName];
+    if (!provider) {
+      console.error("NegiLayer "+year+" unknown.");
+      return;
+    }
+    
+    if (isLeft) {
+      while (viewer.scene.imageryLayers.get(2))
+        viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
+    
+      if (crrLeftTheme) {
+        if (crrLeftTheme != layerName) {
+          removeTheme(isLeft);
+          viewer.scene.imageryLayers.addImageryProvider(provider);
+          crrLeftTheme = layerName;
+        }
+      } else {
+        removeTheme(isLeft);
+        viewer.scene.imageryLayers.addImageryProvider(provider);
+        crrLeftTheme = layerName;
+      }
+    } else {
+      while (slaveViewer.scene.imageryLayers.get(2))
+        slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
+    
+      if (crrRightTheme) {
+        if (crrRightTheme != layerName) {
+          removeTheme(isLeft);
+          slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+          crrRightTheme = layerName;
+        }
+      } else {
+        removeTheme(isLeft);
+        slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+        crrRightTheme = layerName;
+      }
+    }
+  }
+  
+  function setChgZone(year, isLeft=true) {
+    var chgZoneArray = siteInfo[crrSite].chgZoneArray;
+    
+    var layerName = null;
+    for (var i=0; i<chgZoneArray.length; i++) {
+      var obj = chgZoneArray[i];
+      if (obj.year == year) {
+        layerName = obj.layer;
+        break;
+      }
+    }
+    
+    if (!layerName) {
+      console.error("NegiLayer "+year+" unknown.");
+      return;
+    }
+    
+    var provider = imgProvider[layerName];
+    if (!provider) {
+      console.error("NegiLayer "+year+" unknown.");
+      return;
+    }
+    
+    if (isLeft) {
+      while (viewer.scene.imageryLayers.get(2))
+        viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
+    
+      if (crrLeftTheme) {
+        if (crrLeftTheme != layerName) {
+          removeTheme(isLeft);
+          viewer.scene.imageryLayers.addImageryProvider(provider);
+          ;
+        }
+      } else {
+        removeTheme(isLeft);
+        viewer.scene.imageryLayers.addImageryProvider(provider);
+        crrLeftTheme = layerName;
+      }
+    } else {
+      while (slaveViewer.scene.imageryLayers.get(2))
+        slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
+    
+      if (crrRightTheme) {
+        if (crrRightTheme != layerName) {
+          removeTheme(isLeft);
+          slaveViewer.scene.imageryLayers.addImageryProvider(provider);
+          crrRightTheme = layerName;
+        }
+      } else {
+        removeTheme(isLeft);
         slaveViewer.scene.imageryLayers.addImageryProvider(provider);
         crrRightTheme = layerName;
       }
@@ -691,46 +956,17 @@
   
   function removeTheme(isLeft=true) {
     if (isLeft) {
+      crrLeftTheme = null;
       while (viewer.scene.imageryLayers.get(2))
         viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(2));
     }
     else {
+      crrRightTheme = null;
       while (slaveViewer.scene.imageryLayers.get(2))
         slaveViewer.scene.imageryLayers.remove(slaveViewer.scene.imageryLayers.get(2));
     }
   } 
   
-  function setWmsLayer(option) {
-    var year = option.year ? option.year : crrYear;
-    var site = option.site ? option.site : crrSite;
-    
-    crrYear = year;
-    crrSite = site;
-    
-    var photo = option.photo ? option.photo : crrPhoto;
-    var theme = option.theme ? option.theme : crrTheme;
-    
-    var photoId = site+":"+photo+":"+year;
-    var themeId = site+":"+theme+":"+year;
-    
-    var photoProvider = imgProvider[photoId];
-    var themeProvider = imgProvider[themeId];
-    
-
-    while (viewer.scene.imageryLayers.get(1))
-      viewer.scene.imageryLayers.remove(viewer.scene.imageryLayers.get(1));
-
-    if (photoProvider) {
-      viewer.scene.imageryLayers.addImageryProvider(photoProvider);
-      crrPhoto = photo;
-    }
-    
-    if (themeProvider) {
-      viewer.scene.imageryLayers.addImageryProvider(themeProvider);
-      crrTheme = theme;
-    }
-  }
-
   ///////////////
   // POI DISPLAY
   // TODO: WFS(GeoJSON)를 데이터 소스로 이용하게 수정
@@ -814,9 +1050,9 @@
         <div class="buttonBox">
           <button id="btnPhotoView" class="down">영상보기</button>
           <button id="btnPhotoDiff">차영상</button>
-          <button id="btnVegi">식생분포</button>
+          <button id="btnNegi">식생분포</button>
           <button id="btnDemDiff">지형변화</button>
-          <button id="btnDiffArea">변화지역</button>
+          <button id="btnChgZone">변화지역</button>
         </div>
       </div>
     </div>

@@ -34,14 +34,16 @@ siteInfo["lafarge"] =
     ,{fromYear: 2015, toYear: 2014, layer:"Sangji:PhotoDeltaDelta_2015-2014"}
   ]
   ,negiArray: [
+    {year: 2016, layer:"Sangji:restore_2016_2015"}
+    ,{year: 2015, layer:"Sangji:restore_2015_2014"}
   ]
   ,demDeltaArray: [
     {fromYear: 2016, toYear: 2015, layer:"Sangji:DemDelta_2016-2015_5187"}
-    ,{fromYear: 2015, toYear: 2014, layer:"Sangji:DemDelta_2015-2014_5187"}
     ,{fromYear: 2015, toYear: 2007, layer:"Sangji:DemDelta_2015-2007_5187"}
-    ,{fromYear: 2014, toYear: 2007, layer:"Sangji:DemDelta_2014-2007_5187"}
   ]
   ,chgZoneArray: [
+    {year: 2016, layer:"Sangji:restore_2016_2015"}
+    ,{year: 2015, layer:"Sangji:dig_2015_2014"}
   ]
 }
 
