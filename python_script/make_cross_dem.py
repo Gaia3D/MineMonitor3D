@@ -63,7 +63,7 @@ if __name__ == '__main__':
             # 그냥 하면 오류가 나서 여기서 멈춤.
             # regedit로 HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting 의 DontShowUI 를 1로 설정하여 해결
             # 참고: http://gis.stackexchange.com/questions/101921/gdal-calc-works-but-i-get-a-python-error-at-the-end-of-each-process-that-prevent
-            cmdStr = r'gdal_calc -A {data_folder}\temp_{a_year}.tif -B {data_folder}\\temp_{b_year}.tif ' \
+            cmdStr = r'gdal_calc --overwrite -A {data_folder}\temp_{a_year}.tif -B {data_folder}\\temp_{b_year}.tif ' \
                      '--outfile={data_folder}\dem_{a_year}-{b_year}.tif --calc="A-B"'\
                 .format(data_folder=DATA_FOLDER, a_year=jYear, b_year=iYear)
             print cmdStr

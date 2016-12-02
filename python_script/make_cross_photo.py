@@ -2,7 +2,6 @@
 
 import os
 from gdal_template import *
-from math import floor
 
 if __name__ == '__main__':
     DATA_FOLDER = r"C:\Temp\Lafarge"
@@ -77,7 +76,7 @@ if __name__ == '__main__':
             for iBand in range(3):
                 outFileName = r'{data_folder}\photo_band{band}_{a_year}-{b_year}.tif'\
                     .format(data_folder=DATA_FOLDER, a_year=jYear, b_year=iYear, band=(iBand+1))
-                cmdStr = r'gdal_calc --calc "A-B" --format GTiff --type Byte ' \
+                cmdStr = r'gdal_calc --calc "A-B" --format GTiff --type Byte --overwrite ' \
                          r'-A {data_folder}\temp_{a_year}.tif --A_band {band} ' \
                          r'-B {data_folder}\\temp_{b_year}.tif --B_band {band} ' \
                          r'--outfile={out_name}'\
