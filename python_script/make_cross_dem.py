@@ -4,25 +4,25 @@ import os
 from osgeo import gdal
 import osgeo.osr as osr
 from gdalconst import *
-from gdal_calc import *
 
 # Enable GDAL/OGR exceptions
 gdal.UseExceptions()
 
+
 # example GDAL error handler function
 def gdal_error_handler(err_class, err_num, err_msg):
     errtype = {
-            gdal.CE_None:'None',
-            gdal.CE_Debug:'Debug',
-            gdal.CE_Warning:'Warning',
-            gdal.CE_Failure:'Failure',
-            gdal.CE_Fatal:'Fatal'
+            gdal.CE_None: 'None',
+            gdal.CE_Debug: 'Debug',
+            gdal.CE_Warning: 'Warning',
+            gdal.CE_Failure: 'Failure',
+            gdal.CE_Fatal: 'Fatal'
     }
-    err_msg = err_msg.replace('\n',' ')
+    err_msg = err_msg.replace('\n', ' ')
     err_class = errtype.get(err_class, 'None')
-    print 'Error Number: %s' % (err_num)
-    print 'Error Type: %s' % (err_class)
-    print 'Error Message: %s' % (err_msg)
+    print 'Error Number: %s' % err_num
+    print 'Error Type: %s' % err_class
+    print 'Error Message: %s' % err_msg
 
 # install error handler
 gdal.PushErrorHandler(gdal_error_handler)
@@ -37,11 +37,11 @@ def getRasterInfo(filePath):
         authoOrg = srs.GetAttrValue("AUTHORITY", 0)
         authoNo = srs.GetAttrValue("AUTHORITY", 1)
         geotransform = dataset.GetGeoTransform()
-        infoObj = {}
+        infoObj = dict()
         infoObj['xSize'] = dataset.RasterXSize
         infoObj['ySize'] = dataset.RasterYSize
         infoObj['srs'] = "{}:{}".format(authoOrg, authoNo)
-        if not geotransform is None:
+        if geotransform is not None:
             infoObj['xOrg'] = geotransform[0]
             infoObj['yOrg'] = geotransform[3]
             infoObj['xRes'] = geotransform[1]
@@ -58,10 +58,10 @@ def getRasterInfo(filePath):
         return None
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     DATA_FOLDER = r"C:\Temp\Lafarge"
 
-    dem_list = {}
+    dem_list = dict()
     dem_list[2007] = "2007_join.tif"
     dem_list[2014] = "2014_DEM_fix.tif"
     dem_list[2015] = "2015_DEM_UAV_Cut.tif"
@@ -87,7 +87,7 @@ if __name__=='__main__':
 
             print '[I]:', iFilePath
             print iInfo
-            print '[J]:',jFilePath
+            print '[J]:', jFilePath
             print jInfo
 
             # 1. 범위 확인: 최대 최소 합성
@@ -102,12 +102,14 @@ if __name__=='__main__':
 
             # 3. 해당 범위와 해상도 대상 변환
             iDem = os.path.join(DATA_FOLDER, "temp_{}.tif".format(iYear))
-            cmdStr = 'gdal_translate -of "GTiff" -tr {} {} -projwin {} {} {} {} {} {}'.format(xRes, yRes, xMin, yMax, xMax, yMin, iFilePath, iDem)
+            cmdStr = 'gdal_translate -of "GTiff" -tr {} {} -projwin {} {} {} {} {} {}'\
+                .format(xRes, yRes, xMin, yMax, xMax, yMin, iFilePath, iDem)
             print cmdStr
             os.system(cmdStr)
 
             jDem = os.path.join(DATA_FOLDER, "temp_{}.tif".format(jYear))
-            cmdStr = 'gdal_translate -of "GTiff" -tr {} {} -projwin {} {} {} {} {} {}'.format(xRes, yRes, xMin, yMax, xMax, yMin, jFilePath, jDem)
+            cmdStr = 'gdal_translate -of "GTiff" -tr {} {} -projwin {} {} {} {} {} {}'\
+                .format(xRes, yRes, xMin, yMax, xMax, yMin, jFilePath, jDem)
             print cmdStr
             os.system(cmdStr)
 
@@ -116,8 +118,13 @@ if __name__=='__main__':
             # regedit로 HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting 의 DontShowUI 를 1로 설정하여 해결
             # 참고: http://gis.stackexchange.com/questions/101921/gdal-calc-works-but-i-get-a-python-error-at-the-end-of-each-process-that-prevent
             cmdStr = r'gdal_calc -A {data_folder}\temp_{a_year}.tif -B {data_folder}\\temp_{b_year}.tif ' \
-                     '--outfile={data_folder}\{a_year}-{b_year}.tif --calc="A-B"'.format(data_folder=DATA_FOLDER, a_year=jYear, b_year=iYear)
+                     '--outfile={data_folder}\dem_{a_year}-{b_year}.tif --calc="A-B"'\
+                .format(data_folder=DATA_FOLDER, a_year=jYear, b_year=iYear)
             print cmdStr
             os.system(cmdStr)
+
+            # 불필요 파일 제거
+            os.remove(iDem)
+            os.remove(jDem)
 
             print
