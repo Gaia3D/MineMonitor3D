@@ -46,11 +46,17 @@ if __name__ == '__main__':
         # 참고: http://gis.stackexchange.com/questions/101921/gdal-calc-works-but-i-get-a-python-error-at-the-end-of-each-process-that-prevent
         outFileName = r'{data_folder}\vari_{year}.tif'\
             .format(data_folder=DATA_FOLDER, year=iYear)
-        cmdStr = r'gdal_calc --calc "((B-A)/(B+A-C))*D" --format GTiff --type Float32 --overwrite ' \
+        # cmdStr = r'gdal_calc --calc "((B-A)/(B+A-C))*D" --format GTiff --type Float32 --overwrite ' \
+        #          r'-A {src_file} --A_band 1 ' \
+        #          r'-B {src_file} --B_band 2 ' \
+        #          r'-C {src_file} --C_band 3 ' \
+        #          r'-D {bound_file} ' \
+        #          r'--outfile={out_name}'\
+        #     .format(data_folder=DATA_FOLDER, src_file=tempPhotoPath, bound_file=boundFilePath, out_name=outFileName)
+        cmdStr = r'gdal_calc --calc "((B-A)/(B+A-C))" --format GTiff --type Float32 --overwrite ' \
                  r'-A {src_file} --A_band 1 ' \
                  r'-B {src_file} --B_band 2 ' \
                  r'-C {src_file} --C_band 3 ' \
-                 r'-D {bound_file} ' \
                  r'--outfile={out_name}'\
             .format(data_folder=DATA_FOLDER, src_file=tempPhotoPath, bound_file=boundFilePath, out_name=outFileName)
         print cmdStr
